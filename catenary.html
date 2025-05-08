@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>현수선 줄 길이 계산기</title>
+  <title>현수선 줄 길이 계산기 (정확 버전)</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -92,15 +92,15 @@
     }
 
     function findA(L, H) {
-      let left = 0.0001;
+      let left = 0.00001;
       let right = 1e6;
-      const tolerance = 1e-10;
+      const tolerance = 1e-12;
       let mid;
 
       while (right - left > tolerance) {
         mid = (left + right) / 2;
         const val = f(mid, L, H);
-        if (val > 0) {
+        if (val < 0) {  // ✅ 수정된 방향
           right = mid;
         } else {
           left = mid;
