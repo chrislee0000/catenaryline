@@ -1,145 +1,65 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>현수선 줄 길이 계산기</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f0f4f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-    }
+#기본 라이브러리 호출
+import numpy as np
+import cmath
+import math
 
-    h1 {
-      color: #333;
-      margin-bottom: 30px;
-    }
+#현수선 테일러 근사식 이용 필요한 줄 길이 계산
+H=float(input("높이차(m)를 입력해주세요:"))
+L=float(input("두 점 사이의 간격(m)을 입력해주세요:"))
 
-    form {
-      background-color: #ffffff;
-      padding: 30px 40px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-      width: 350px;
-    }
+#3차방정식 근의 공식이용 해 도출(이 부분만 chatgpt 참고고)
+def solve_cubic(a3, a2, a1, a0):
+    if a3 == 0:
+        raise ValueError("a3 cannot be zero for a cubic equation.")
 
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: 500;
-      color: #444;
-    }
+    # 정규형: x^3 + px + q = 0 로 바꾸기
+    a = a2 / a3
+    b = a1 / a3
+    c = a0 / a3
 
-    input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-    }
+    # 변수를 치환하여 depressed cubic 형태로 바꾸기: x = t - a/3
+    p = b - a**2 / 3
+    q = (2 * a**3) / 27 - (a * b) / 3 + c
 
-    button {
-      margin-top: 25px;
-      width: 100%;
-      background-color: #0077cc;
-      color: white;
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
+    # 판별식
+    D = (q / 2)**2 + (p / 3)**3
 
-    button:hover {
-      background-color: #005fa3;
-    }
+    if D > 0:
+        # 하나의 실근 + 두 개의 켤레 복소근
+        u = (-q / 2 + cmath.sqrt(D))**(1/3)
+        v = (-q / 2 - cmath.sqrt(D))**(1/3)
+        t1 = u + v
+        roots = [t1 - a / 3]
+    elif D == 0:
+        # 중근 포함
+        u = (-q / 2)**(1/3)
+        t1 = 2 * u
+        t2 = -u
+        roots = [t1 - a / 3, t2 - a / 3]
+    else:
+        # 세 실근
+        r = np.sqrt(-(p**3) / 27)
+        theta = np.arccos(-q / (2 * np.sqrt(-(p**3) / 27)))
+        t1 = 2 * np.sqrt(-p / 3) * np.cos(theta / 3)
+        t2 = 2 * np.sqrt(-p / 3) * np.cos((theta + 2 * np.pi) / 3)
+        t3 = 2 * np.sqrt(-p / 3) * np.cos((theta + 4 * np.pi) / 3)
+        roots = [t1 - a / 3, t2 - a / 3, t3 - a / 3]
 
-    .result {
-      margin-top: 30px;
-      background-color: #ffffff;
-      padding: 20px 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-      text-align: center;
-      font-size: 18px;
-      color: #222;
-    }
-  </style>
-</head>
-<body>
-  <h1>현수선 줄 길이 계산기</h1>
+    # 복소근까지 포함해 3개의 해로 맞추기
+    while len(roots) < 3:
+        roots.append(roots[-1])
 
-  <form id="calcForm">
-    <label for="H">높이차 (m):</label>
-    <input type="number" id="H" step="0.01" required>
+    a_real = [r.real for r in roots if np.isreal(r) and r.real > 0]
+    if not a_real:
+        raise ValueError("양의 실근이 존재하지 않습니다.")
+    return a_real[0]
 
-    <label for="L">두 점 사이 거리 (m):</label>
-    <input type="number" id="L" step="0.01" required>
+#현수선 a 값 도출
+a=solve_cubic(L**4/384,0,L**2/8,H*-1)
+#현수선 길이 계산
+result = 2*a*np.asinh(L/(2*a))
 
-    <button type="submit">계산하기</button>
-  </form>
+#출력력
+print("줄의 길이: {}".format(result))
 
-  <div id="result" class="result" style="display:none;"></div>
-
-  <script>
-    document.getElementById("calcForm").addEventListener("submit", function(event) {
-      event.preventDefault();
-      calculateCatenary();
-    });
-
-    function solveCubic(a3, a2, a1, a0) {
-      let a = a2 / a3;
-      let b = a1 / a3;
-      let c = a0 / a3;
-      let p = b - (a ** 2) / 3;
-      let q = (2 * a ** 3) / 27 - (a * b) / 3 + c;
-      let D = (q / 2) ** 2 + (p / 3) ** 3;
-      let roots = [];
-
-      if (D > 0) {
-        let u = Math.cbrt(-q / 2 + Math.sqrt(D));
-        let v = Math.cbrt(-q / 2 - Math.sqrt(D));
-        roots.push(u + v - a / 3);
-      } else if (D === 0) {
-        let u = Math.cbrt(-q / 2);
-        roots.push(2 * u - a / 3);
-        roots.push(-u - a / 3);
-      } else {
-        let r = Math.sqrt(-((p ** 3) / 27));  // ← 괄호로 수정
-        let phi = Math.acos(-q / (2 * r));
-        let m = 2 * Math.sqrt(-p / 3);
-        roots.push(m * Math.cos(phi / 3) - a / 3);
-        roots.push(m * Math.cos((phi + 2 * Math.PI) / 3) - a / 3);
-        roots.push(m * Math.cos((phi + 4 * Math.PI) / 3) - a / 3);
-      }
-
-      let realRoots = roots.filter(r => r > 0);
-      if (realRoots.length === 0) {
-        throw new Error("양의 실근이 존재하지 않습니다.");
-      }
-      return realRoots[0];
-    }
-
-    function calculateCatenary() {
-      const H = parseFloat(document.getElementById("H").value);
-      const L = parseFloat(document.getElementById("L").value);
-      const resultBox = document.getElementById("result");
-
-      try {
-        const a = solveCubic((L ** 4) / 384, 0, (L ** 2) / 8, -H);
-        const S = 2 * a * Math.asinh(L / (2 * a));
-        resultBox.innerHTML = `줄의 길이: <strong>${S.toFixed(4)}</strong> m`;
-        resultBox.style.display = 'block';
-      } catch (err) {
-        resultBox.innerHTML = `오류: ${err.message}`;
-        resultBox.style.display = 'block';
-      }
-    }
-  </script>
-</body>
-</html>
+#이외 코드는 chatgpt로 오류검수만 진행
