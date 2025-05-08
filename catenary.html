@@ -20,10 +20,10 @@
 
     form {
       background-color: white;
-      padding: 30px;
+      padding: 30px 40px;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      width: 320px;
+      width: 350px;
     }
 
     label {
@@ -58,14 +58,14 @@
       background-color: #005fa3;
     }
 
-    #output {
+    #result {
       margin-top: 25px;
       font-size: 18px;
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      width: 320px;
+      width: 350px;
       text-align: center;
       color: #222;
     }
@@ -78,70 +78,52 @@
     <label for="H">높이차 H (m):</label>
     <input type="number" id="H" step="0.01" required>
 
-    <label for="L">거리 L (m):</label>
+    <label for="L">수평 거리 L (m):</label>
     <input type="number" id="L" step="0.01" required>
 
     <button type="submit">계산하기</button>
   </form>
 
-  <div id="output" style="display:none;"></div>
+  <div id="result" style="display:none;"></div>
 
   <script>
+    function f(a, L, H) {
+      return a * (Math.cosh(L / (2 * a)) - 1) - H;
+    }
+
+    function findA(L, H) {
+      let left = 0.0001;
+      let right = 1e6;
+      const tolerance = 1e-10;
+      let mid;
+
+      while (right - left > tolerance) {
+        mid = (left + right) / 2;
+        const val = f(mid, L, H);
+        if (val > 0) {
+          right = mid;
+        } else {
+          left = mid;
+        }
+      }
+
+      return (left + right) / 2;
+    }
+
     function calculate() {
       const H = parseFloat(document.getElementById("H").value);
       const L = parseFloat(document.getElementById("L").value);
-      const output = document.getElementById("output");
+      const output = document.getElementById("result");
 
       try {
-        const a3 = (L ** 4) / 384;
-        const a2 = 0;
-        const a1 = (L ** 2) / 8;
-        const a0 = -H;
-
-        const a = solveCubic(a3, a2, a1, a0);
+        const a = findA(L, H);
         const length = 2 * a * Math.asinh(L / (2 * a));
         output.innerText = `줄의 길이: ${length.toFixed(6)} m`;
         output.style.display = "block";
       } catch (err) {
-        output.innerText = "오류: " + err.message;
+        output.innerText = "계산 중 오류 발생: " + err.message;
         output.style.display = "block";
       }
-    }
-
-    function solveCubic(a3, a2, a1, a0) {
-      const a = a2 / a3;
-      const b = a1 / a3;
-      const c = a0 / a3;
-
-      const p = b - (a ** 2) / 3;
-      const q = (2 * a ** 3) / 27 - (a * b) / 3 + c;
-      const D = (q / 2) ** 2 + (p / 3) ** 3;
-      const roots = [];
-
-      if (D > 0) {
-        const u = Math.cbrt(-q / 2 + Math.sqrt(D));
-        const v = Math.cbrt(-q / 2 - Math.sqrt(D));
-        const t1 = u + v;
-        roots.push(t1 - a / 3);
-      } else if (Math.abs(D) < 1e-10) {
-        const u = Math.cbrt(-q / 2);
-        roots.push(2 * u - a / 3);
-        roots.push(-u - a / 3);
-      } else {
-        const r = Math.sqrt(-(p ** 3) / 27);
-        const theta = Math.acos(-q / (2 * r));
-        const m = 2 * Math.sqrt(-p / 3);
-        const t1 = m * Math.cos(theta / 3) - a / 3;
-        const t2 = m * Math.cos((theta + 2 * Math.PI) / 3) - a / 3;
-        const t3 = m * Math.cos((theta + 4 * Math.PI) / 3) - a / 3;
-        roots.push(t1, t2, t3);
-      }
-
-      const realRoots = roots.filter(x => x > 0 && isFinite(x));
-      if (realRoots.length === 0) {
-        throw new Error("양의 실근이 존재하지 않습니다.");
-      }
-      return realRoots[0];
     }
   </script>
 </body>
