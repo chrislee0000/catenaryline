@@ -110,7 +110,7 @@
         roots.push(2 * u - a / 3);
         roots.push(-u - a / 3);
       } else {
-        let r = Math.sqrt(-p ** 3 / 27);
+        let r = Math.sqrt(-((p ** 3) / 27));  // ← 괄호로 수정
         let phi = Math.acos(-q / (2 * r));
         let m = 2 * Math.sqrt(-p / 3);
         roots.push(m * Math.cos(phi / 3) - a / 3);
@@ -131,7 +131,7 @@
       const resultBox = document.getElementById("result");
 
       try {
-        const a = solveCubic(L ** 4 / 384, 0, L ** 2 / 8, -H);
+        const a = solveCubic((L ** 4) / 384, 0, (L ** 2) / 8, -H);
         const S = 2 * a * Math.asinh(L / (2 * a));
         resultBox.innerHTML = `줄의 길이: <strong>${S.toFixed(4)}</strong> m`;
         resultBox.style.display = 'block';
