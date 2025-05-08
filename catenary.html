@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>현수선 줄 길이 계산기 (정확 버전)</title>
+  <title>현수선 줄 길이 계산기</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -76,10 +76,10 @@
 
   <form onsubmit="event.preventDefault(); calculate();">
     <label for="H">높이차 H (m):</label>
-    <input type="number" id="H" step="0.01" required>
+    <input type="number" id="H" step="0.01" required value="1">
 
     <label for="L">수평 거리 L (m):</label>
-    <input type="number" id="L" step="0.01" required>
+    <input type="number" id="L" step="0.01" required value="10">
 
     <button type="submit">계산하기</button>
   </form>
@@ -88,22 +88,28 @@
 
   <script>
     function f(a, L, H) {
-      return a * (Math.cosh(L / (2 * a)) - 1) - H;
+      const x = L / (2 * a);
+      if (x > 100) return Number.POSITIVE_INFINITY;
+      return a * (Math.cosh(x) - 1) - H;
     }
 
     function findA(L, H) {
-      let left = 0.00001;
-      let right = 1e6;
+      let left = 0.0001;
+      let right = 1000;
       const tolerance = 1e-12;
-      let mid;
+      let f_left = f(left, L, H);
+      let f_right = f(right, L, H);
+      if (f_left * f_right > 0) throw new Error("초기 구간 내 해가 없습니다");
 
       while (right - left > tolerance) {
-        mid = (left + right) / 2;
-        const val = f(mid, L, H);
-        if (val < 0) {  
+        let mid = (left + right) / 2;
+        let fmid = f(mid, L, H);
+        if (f_left * fmid < 0) {
           right = mid;
+          f_right = fmid;
         } else {
           left = mid;
+          f_left = fmid;
         }
       }
 
@@ -113,18 +119,22 @@
     function calculate() {
       const H = parseFloat(document.getElementById("H").value);
       const L = parseFloat(document.getElementById("L").value);
-      const output = document.getElementById("result");
+      const result = document.getElementById("result");
 
       try {
         const a = findA(L, H);
-        const length = 2 * a * Math.asinh(L / (2 * a));
-        output.innerText = `줄의 길이: ${length.toFixed(6)} m`;
-        output.style.display = "block";
-      } catch (err) {
-        output.innerText = "계산 중 오류 발생: " + err.message;
-        output.style.display = "block";
+        const S = 2 * a * Math.sinh(L / (2 * a)); // ✅ 수정된 공식
+        result.innerText = `줄의 길이: ${S.toFixed(6)} m`;
+        result.style.display = "block";
+      } catch (e) {
+        result.innerText = "계산 오류: " + e.message;
+        result.style.display = "block";
       }
     }
+
+    window.onload = () => {
+      calculate();  // 기본값으로 자동 실행
+    };
   </script>
 </body>
 </html>
