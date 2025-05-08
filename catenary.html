@@ -100,7 +100,7 @@
       while (right - left > tolerance) {
         mid = (left + right) / 2;
         const val = f(mid, L, H);
-        if (val < 0) {  // ✅ 수정된 방향
+        if (val < 0) {  
           right = mid;
         } else {
           left = mid;
